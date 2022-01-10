@@ -1,0 +1,77 @@
+;
+; KeFuckingNoobD.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System ; TODO: specify appropriate Class
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318} ; TODO: specify appropriate ClassGuid
+Provider=%ManufacturerName%
+CatalogFile=KeFuckingNoobD.cat
+DriverVer= ; TODO: set DriverVer in stampinf property pages
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+KeFuckingNoobD_Device_CoInstaller_CopyFiles = 11
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+KeFuckingNoobD.sys  = 1,,
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%KeFuckingNoobD.DeviceDesc%=KeFuckingNoobD_Device, Root\KeFuckingNoobD ; TODO: edit hw-id
+
+[KeFuckingNoobD_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+KeFuckingNoobD.sys
+
+;-------------- Service installation
+[KeFuckingNoobD_Device.NT.Services]
+AddService = KeFuckingNoobD,%SPSVCINST_ASSOCSERVICE%, KeFuckingNoobD_Service_Inst
+
+; -------------- KeFuckingNoobD driver install sections
+[KeFuckingNoobD_Service_Inst]
+DisplayName    = %KeFuckingNoobD.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\KeFuckingNoobD.sys
+
+;
+;--- KeFuckingNoobD_Device Coinstaller installation ------
+;
+
+[KeFuckingNoobD_Device.NT.CoInstallers]
+AddReg=KeFuckingNoobD_Device_CoInstaller_AddReg
+CopyFiles=KeFuckingNoobD_Device_CoInstaller_CopyFiles
+
+[KeFuckingNoobD_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[KeFuckingNoobD_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[KeFuckingNoobD_Device.NT.Wdf]
+KmdfService =  KeFuckingNoobD, KeFuckingNoobD_wdfsect
+[KeFuckingNoobD_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+DiskName = "KeFuckingNoobD Installation Disk"
+KeFuckingNoobD.DeviceDesc = "KeFuckingNoobD Device"
+KeFuckingNoobD.SVCDESC = "KeFuckingNoobD Service"
