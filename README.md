@@ -4,6 +4,7 @@
  - Visual Studio 2017 ve üstü 
  - Windows 10 SDK
  - WDK
+ - C++/CLI
 
 #### Driver Başlatma
 
