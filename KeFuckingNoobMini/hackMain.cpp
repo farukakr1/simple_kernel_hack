@@ -5,6 +5,8 @@
 #include <array>
 #include "data.h"
 #include <algorithm>
+#include <TlHelp32.h>
+#include <tchar.h>
 
 bool FarmBot_FixedRange = false;
 D3DXVECTOR3 FarmBot_FixedRangePos;
@@ -24,9 +26,34 @@ DWORD getDistance(D3DXVECTOR3 pos_1, D3DXVECTOR3 pos_2) {
 	return diff_pos;
 }
 
+DWORD dwGetModuleBaseAddress(DWORD dwProcessID, TCHAR* lpszModuleName)
+{
+	HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwProcessID);
+	DWORD dwModuleBaseAddress = 0;
+	if (hSnapshot != INVALID_HANDLE_VALUE)
+	{
+		MODULEENTRY32 ModuleEntry32 = { 0 };
+		ModuleEntry32.dwSize = sizeof(MODULEENTRY32);
+		if (Module32First(hSnapshot, &ModuleEntry32))
+		{
+			do
+			{
+				if (_tcscmp(ModuleEntry32.szModule, lpszModuleName) == 0)
+				{
+					dwModuleBaseAddress = (DWORD)ModuleEntry32.modBaseAddr;
+					break;
+				}
+			} while (Module32Next(hSnapshot, &ModuleEntry32));
+		}
+		CloseHandle(hSnapshot);
+	}
+	return dwModuleBaseAddress;
+}
+
 void init_hack(LPCSTR RegistryPath, DWORD pid) {
 	pID = pid;
 	Driver = KeInterface(RegistryPath);
+	ModuleBase =  dwGetModuleBaseAddress(pid, L"bin_aeldra_245.exe");
 }
 
 DWORD getMainActorInstance() {
@@ -34,7 +61,8 @@ DWORD getMainActorInstance() {
 	return Driver.ReadVirtualMemory<DWORD>(pID, PlayerBase + Offset_player, sizeof(DWORD));
 }
 
-DWORD getVid(DWORD instance) {
+//bin_aeldra_245 ile deðiþti
+/*DWORD getVid(DWORD instance) {
 	if (!instance) { return 0; }
 
 	DWORD esi = instance + Offset_base;
@@ -59,6 +87,12 @@ DWORD getVid(DWORD instance) {
 		}
 	}
 	return eax;
+}*/
+
+DWORD getVid(DWORD instance) {
+	if (!instance) { return 0; }
+	DWORD eax = Driver.ReadVirtualMemory<uint8_t>(pID, instance + Offset_base + Offset_vid_base, sizeof(uint8_t));
+	return  Driver.ReadVirtualMemory<DWORD>(pID, instance + Offset_base + eax * 4 + Offset_vid, sizeof(DWORD));
 }
 
 std::string getName(DWORD instance) {
@@ -282,12 +316,4 @@ void FarmBotThread(DWORD distance) {
 	if (MobObj.VID) {
 		PressActor(MobObj.VID);
 	}
-}
-
-void dummyfunc() {
-	//int sz = getMobList(true, false).size();
-	int sz = getMobList(false, true).size();
-	System::Windows::Forms::MessageBox::Show(sz.ToString());
-
-	FarmBotThread(5000);
 }

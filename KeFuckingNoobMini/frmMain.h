@@ -53,6 +53,7 @@ namespace KeFuckingNoobMini {
 
 
 
+
 	private: System::ComponentModel::IContainer^ components;
 
 	protected:
@@ -227,6 +228,5 @@ namespace KeFuckingNoobMini {
 	private: System::Void txtInitHack_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {
 		e->Handled = !System::Char::IsDigit(e->KeyChar) && !System::Char::IsControl(e->KeyChar);
 	}
-
-	};
+};
 }

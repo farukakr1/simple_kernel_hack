@@ -37,5 +37,3 @@ std::vector<InstanceObj> getMobList(bool AttackMob, bool AttackMetin);
 InstanceObj getAttackableMob(DWORD Distance, bool AttackMob, bool AttackMetin);
 
 void FarmBotThread(DWORD distance);
-
-void dummyfunc();
