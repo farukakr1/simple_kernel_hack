@@ -28,12 +28,14 @@ DWORD getInstanceType(DWORD instance);
 DWORD getTargetVid();
 D3DXVECTOR3 getPixelPosition(DWORD instance);
 
-DWORD getAttackVid();
-void setAttackVid(DWORD vid);
+DWORD getAttackStatus();
+void PressActor(DWORD vid);
 
 bool setFixedRange(bool status);
 
-std::vector<InstanceObj> GetMobList(bool AttackMob, bool AttackMetin);
-InstanceObj getAttacableMob(DWORD Distance, bool AttackMob, bool AttackMetin);
+std::vector<InstanceObj> getMobList(bool AttackMob, bool AttackMetin);
+InstanceObj getAttackableMob(DWORD Distance, bool AttackMob, bool AttackMetin);
 
 void FarmBotThread(DWORD distance);
+
+void dummyfunc();

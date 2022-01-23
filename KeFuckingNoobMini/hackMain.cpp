@@ -36,7 +36,29 @@ DWORD getMainActorInstance() {
 
 DWORD getVid(DWORD instance) {
 	if (!instance) { return 0; }
-	return Driver.ReadVirtualMemory<DWORD>(pID, instance + Offset_vid, sizeof(DWORD));
+
+	DWORD esi = instance + Offset_base;
+
+	DWORD eax = Driver.ReadVirtualMemory<uint8_t>(pID, esi + Offset_vid_1, sizeof(uint8_t));
+	DWORD edi = Driver.ReadVirtualMemory<uint8_t>(pID, esi + Offset_vid_2, sizeof(uint8_t));
+
+	eax = Driver.ReadVirtualMemory<DWORD>(pID, esi + eax * 4 + Offset_vid_3, sizeof(DWORD));
+
+	for (int edx = 0; edx < 0x19; edx++) {
+		if (edx == edi) {
+			eax -= Driver.ReadVirtualMemory<uint8_t>(pID, esi + Offset_vid_4, sizeof(uint8_t));
+		}
+		else if (edx < 0x5) {
+			eax -= 0x3;
+		}
+		else if (edx > 0xE) {
+			eax += 0x7;
+		}
+		else {
+			eax -= Driver.ReadVirtualMemory<uint8_t>(pID, esi + edx + Offset_vid_5, sizeof(uint8_t));
+		}
+	}
+	return eax;
 }
 
 std::string getName(DWORD instance) {
@@ -47,33 +69,131 @@ std::string getName(DWORD instance) {
 
 DWORD getInstanceType(DWORD instance) {
 	if (!instance) { return 0; }
-	return  Driver.ReadVirtualMemory<DWORD>(pID, instance + Offset_instanceType, sizeof(DWORD));
+	DWORD eax = Driver.ReadVirtualMemory<uint8_t>(pID, instance + Offset_base + Offset_instanceType_base, sizeof(uint8_t));
+	return  Driver.ReadVirtualMemory<DWORD>(pID, instance + Offset_base + eax * 4 + Offset_instanceType, sizeof(DWORD));
 }
 
 DWORD getTargetVid() {
 	if (!getMainActorInstance()) { return 0; }
 	DWORD PythonPlayerPtr = Driver.ReadVirtualMemory<DWORD>(pID, ModuleBase + CPythonPlayer, sizeof(DWORD));
-	return  Driver.ReadVirtualMemory<DWORD>(pID, PythonPlayerPtr + Offset_getTargetVid, sizeof(DWORD));
+	DWORD eax = Driver.ReadVirtualMemory<uint8_t>(pID, PythonPlayerPtr + Offset_getTargetVid_base, sizeof(uint8_t));
+	return  Driver.ReadVirtualMemory<DWORD>(pID, PythonPlayerPtr + eax * 4 + Offset_getTargetVid, sizeof(DWORD));
 }
 
 D3DXVECTOR3 getPixelPosition(DWORD instance) {
 	if (!instance) { return { 0 }; }
-	float x = Driver.ReadVirtualMemory<float>(pID, instance + Offset_posx, sizeof(float));
-	float y = Driver.ReadVirtualMemory<float>(pID, instance + Offset_posy, sizeof(float));
-	return { x, y, 0 };
+	float x = Driver.ReadVirtualMemory<float>(pID, instance + Offset_base + Offset_posx, sizeof(float));
+	float y = Driver.ReadVirtualMemory<float>(pID, instance + Offset_base + Offset_posy, sizeof(float));
+	return { abs(x), abs(y), 0 };
 }
 
-DWORD getAttackVid() {
+DWORD getAttackStatus() {
 	if (!getMainActorInstance()) { return 0; }
 	DWORD PythonPlayerPtr = Driver.ReadVirtualMemory<DWORD>(pID, ModuleBase + CPythonPlayer, sizeof(DWORD));
-	return  Driver.ReadVirtualMemory<DWORD>(pID, PythonPlayerPtr + Offset_setAttackVid, sizeof(DWORD));
+	return  Driver.ReadVirtualMemory<short>(pID, PythonPlayerPtr + Offset_setAttackStatus, sizeof(short));
 }
 
-void setAttackVid(DWORD vid) {
-	if (!getMainActorInstance()) { return; }
-	DWORD PythonPlayerPtr = Driver.ReadVirtualMemory<DWORD>(pID, ModuleBase + CPythonPlayer, sizeof(DWORD));
-	Driver.WriteVirtualMemory<DWORD>(pID, PythonPlayerPtr + Offset_setAttackVid, vid, sizeof(DWORD));
-	Driver.WriteVirtualMemory<DWORD>(pID, PythonPlayerPtr + Offset_setAttackStatus, 3, sizeof(DWORD));
+bool getIsDead(DWORD instance) {
+	if (!instance) { return { 0 }; }
+	return Driver.ReadVirtualMemory<bool>(pID, instance + Offset_base + Offset_isDead, sizeof(bool));
+}
+
+//fonksiyonun mantýðý kýsaca oyunun ana döngüsüne ara bir komut ekliyoruz ve bu komutla istediðimiz herþeyi internal olarak çaðýrabiliyoruz
+//kötü yazýlmýþ olabilir kusuruma bakmayýn artýk :)
+void PressActor(DWORD vid) {
+	if (!vid) { return; }
+	ULONG AllocatedMem = 0;
+	for (int i = 0; i < 10; i++) {
+		AllocatedMem = Driver.AllocMem(pID, PAGE_SIZE);
+		if (AllocatedMem) {
+			break;
+		}
+		else {
+			Sleep(50);
+		}
+	}
+	ULONG OldProtect;
+	ULONG dummy;
+	if (AllocatedMem) {
+
+		unsigned char Buffer[44] = {
+			0x8B, 0x0D, 0x00, 0x00, 0x00, 0x00, //mov ecx, classPtr
+			0x68, 0x01, 0x00, 0x00, 0x00, //push 0x1
+			0x68, 0x00, 0x00, 0x00, 0x00, //push targetVID
+			0x68, 0x00, 0x00, 0x00, 0x00, //push MainActorPtr
+			0xE8, 0x00, 0x00, 0x00, 0x00, //call OnPressActor
+			//main func
+			0x8B, 0x0D, 0x00, 0x00, 0x00, 0x00, //mov ecx, classPtr
+			0xE8, 0x00, 0x00, 0x00, 0x00, //call Process Call
+			0x90, 0x90,
+			0xE9, 0x00, 0x00, 0x00, 0x00 //jmp main loop
+		};
+
+
+
+		DWORD buffer_offset = 0;
+
+
+		buffer_offset = (sizeof(Buffer) - 42);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)(ModuleBase + CPythonPlayer); //mov  ecx, classPtr
+
+		buffer_offset = (sizeof(Buffer) - 32);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)(vid); //push targetvid
+
+		buffer_offset = (sizeof(Buffer) - 27);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)(getMainActorInstance()); //push MainActorPtr
+
+		buffer_offset = (sizeof(Buffer) - 22);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)((ULONG_PTR)(ModuleBase + PressActorCall) - ((ULONG_PTR)AllocatedMem + buffer_offset) - 5 + 1); //call onpressactor
+
+
+		buffer_offset = (sizeof(Buffer) - 16);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)(ModuleBase + MainThreadPtr); //mov ecx, classPtr
+
+		buffer_offset = (sizeof(Buffer) - 11);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)((ULONG_PTR)(ModuleBase + MainProcessCall) - ((ULONG_PTR)AllocatedMem + buffer_offset) - 5 + 1); //call Process Call
+
+		buffer_offset = (sizeof(Buffer) - 4);
+		*(DWORD*)(Buffer + buffer_offset) = (DWORD)((ULONG_PTR)(ModuleBase + MainThread + 0x5) - ((ULONG_PTR)AllocatedMem + buffer_offset) - 5 + 1); //jmp main loop
+
+		std::array<unsigned char, sizeof(Buffer)> ThreadBuffer;
+		for (int i = 0; i < sizeof(Buffer); i++) {
+			ThreadBuffer.at(i) = Buffer[i];
+		}
+
+		Driver.WriteVirtualMemory<std::array<unsigned char, sizeof(Buffer)>>(pID, AllocatedMem, ThreadBuffer, sizeof(Buffer));
+
+
+		DWORD MainThreadAddr = ModuleBase + MainThread;
+
+
+		unsigned char BufferOld[5] = {
+			0xE8, 0x00, 0x00, 0x00, 0x00
+		};
+		*(DWORD*)(BufferOld + 0x1) = (DWORD)((ULONG_PTR)(ModuleBase + MainProcessCall) - ((ULONG_PTR)MainThreadAddr) - 5);
+		std::array<unsigned char, sizeof(BufferOld)> BufferOldArray;
+		for (int i = 0; i < sizeof(BufferOld); i++) {
+			BufferOldArray.at(i) = BufferOld[i];
+		}
+
+		unsigned char BufferNew[5] = {
+			0xE9, 0x00, 0x00, 0x00, 0x00
+		};
+
+		*(DWORD*)(BufferNew + 0x1) = (DWORD)((ULONG_PTR)AllocatedMem - ((ULONG_PTR)MainThreadAddr) - 5);
+		std::array<unsigned char, sizeof(BufferNew)> BufferNewArray;
+		for (int i = 0; i < sizeof(BufferNew); i++) {
+			BufferNewArray.at(i) = BufferNew[i];
+		}
+
+		Driver.VirtualProtect(pID, MainThreadAddr, sizeof(BufferNewArray), PAGE_EXECUTE_READWRITE, &OldProtect);
+		Driver.WriteVirtualMemory<std::array<unsigned char, 5>>(pID, MainThreadAddr, BufferNewArray, 5);
+
+		Sleep(50);
+
+		Driver.WriteVirtualMemory<std::array<unsigned char, sizeof(BufferOld)>>(pID, MainThreadAddr, BufferOldArray, sizeof(BufferOld));
+		Driver.VirtualProtect(pID, MainThreadAddr, sizeof(BufferNewArray), OldProtect, &dummy);
+	}
 }
 
 bool setFixedRange(bool status) {
@@ -94,13 +214,13 @@ bool setFixedRange(bool status) {
 	return true;
 }
 
-std::vector<InstanceObj> GetMobList(bool AttackMob, bool AttackMetin) {
+std::vector<InstanceObj> getMobList(bool AttackMob, bool AttackMetin) {
 	std::vector<InstanceObj> ObjList;
 	DWORD MainActorInstance = getMainActorInstance();
 	if (!MainActorInstance) { return ObjList; }
 	D3DXVECTOR3 MainActorPos = getPixelPosition(MainActorInstance);
 	DWORD MobPtr = Driver.ReadVirtualMemory<DWORD>(pID, ModuleBase + MobPointer, sizeof(DWORD));
-	for (int i = 0; i < 200; i++) {
+	for (int i = 0; i < 400; i++) {
 		DWORD MobInstance = Driver.ReadVirtualMemory<DWORD>(pID, MobPtr + (i * 4), sizeof(DWORD));
 		if (!MobInstance)
 			continue;
@@ -113,12 +233,16 @@ std::vector<InstanceObj> GetMobList(bool AttackMob, bool AttackMetin) {
 		if ((MobType == 0 && !AttackMob) || (MobType == 2 && !AttackMetin) || (MobType != 0 && MobType != 2))
 			continue;
 
+		bool IsDead = getIsDead(MobInstance);
+		if (IsDead)
+			continue;
+
 		DWORD MobVid = getVid(MobInstance);
 		if (!MobVid)
 			continue;
 
 		D3DXVECTOR3 MobPos = getPixelPosition(MobInstance);
-		if (!MobPos.x || !MobPos.y)
+		if (!abs(MobPos.x) || !MobPos.y)
 			continue;
 
 		DWORD MobDistance = getDistance(MainActorPos, MobPos);
@@ -131,13 +255,13 @@ std::vector<InstanceObj> GetMobList(bool AttackMob, bool AttackMetin) {
 	return ObjList;
 }
 
-InstanceObj getAttacableMob(DWORD Distance, bool AttackMob, bool AttackMetin) {
+InstanceObj getAttackableMob(DWORD Distance, bool AttackMob, bool AttackMetin) {
 	DWORD MainActorInstance = getMainActorInstance();
 	if (!MainActorInstance) { return { 0 }; }
 
 	D3DXVECTOR3 MainActorPos = getPixelPosition(MainActorInstance);
 
-	std::vector<InstanceObj> MobList = GetMobList(AttackMob, AttackMetin);
+	std::vector<InstanceObj> MobList = getMobList(AttackMob, AttackMetin);
 	if (!MobList.size()) { return { 0 }; }
 
 	for (InstanceObj Mob : MobList) {
@@ -153,9 +277,17 @@ InstanceObj getAttacableMob(DWORD Distance, bool AttackMob, bool AttackMetin) {
 
 void FarmBotThread(DWORD distance) {
 	if (!getMainActorInstance()) { return; }
-	if (getAttackVid()) { return; }
-	InstanceObj MobObj = getAttacableMob(distance, FarmBot_AttackMob, FarmBot_AttackMetin);
+	if (getAttackStatus()) { return; }
+	InstanceObj MobObj = getAttackableMob(distance, FarmBot_AttackMob, FarmBot_AttackMetin);
 	if (MobObj.VID) {
-		setAttackVid(MobObj.VID);
+		PressActor(MobObj.VID);
 	}
+}
+
+void dummyfunc() {
+	//int sz = getMobList(true, false).size();
+	int sz = getMobList(false, true).size();
+	System::Windows::Forms::MessageBox::Show(sz.ToString());
+
+	FarmBotThread(5000);
 }

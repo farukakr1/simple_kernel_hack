@@ -49,6 +49,10 @@ namespace KeFuckingNoobMini {
 	private: System::Windows::Forms::CheckBox^ chckFixedRange;
 	private: System::Windows::Forms::CheckBox^ chckBot;
 	private: System::Windows::Forms::Timer^ tmrBot;
+
+
+
+
 	private: System::ComponentModel::IContainer^ components;
 
 	protected:
@@ -168,7 +172,7 @@ namespace KeFuckingNoobMini {
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(208, 188);
+			this->ClientSize = System::Drawing::Size(208, 143);
 			this->Controls->Add(this->chckBot);
 			this->Controls->Add(this->chckFixedRange);
 			this->Controls->Add(this->chckAttackMetin);
@@ -188,13 +192,11 @@ namespace KeFuckingNoobMini {
 	private: System::Void btnInitHack_Click(System::Object^ sender, System::EventArgs^ e) {
 		try {
 			DWORD pid = Convert::ToUInt32(this->txtInitHack->Text);
-			init_hack("\\\\.\\kefucking", pid);
+			init_hack("\\\\.\\mrbcnm", pid);
 		}
 		catch (...) {
 			System::Windows::Forms::MessageBox::Show("Düzgün Pid Yaz Lan Eþþek");
 		}
-
-		//init_hack("\\\\.\\kefucking", 6972);
 	}
 	private: System::Void chckAttackMob_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
 		FarmBot_AttackMob = this->chckAttackMob->Checked;
@@ -225,5 +227,6 @@ namespace KeFuckingNoobMini {
 	private: System::Void txtInitHack_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {
 		e->Handled = !System::Char::IsDigit(e->KeyChar) && !System::Char::IsControl(e->KeyChar);
 	}
+
 	};
 }

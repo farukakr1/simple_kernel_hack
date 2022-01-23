@@ -9,8 +9,8 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT pDriverObject,
 	DbgPrintEx(0, 0, "Driver Loaded\n");
 
 
-	RtlInitUnicodeString(&dev, L"\\Device\\kefucking");
-	RtlInitUnicodeString(&dos, L"\\DosDevices\\kefucking");
+	RtlInitUnicodeString(&dev, L"\\Device\\mrbcnm");
+	RtlInitUnicodeString(&dos, L"\\DosDevices\\mrbcnm");
 
 	IoCreateDevice(pDriverObject, 0, &dev, FILE_DEVICE_UNKNOWN, FILE_DEVICE_SECURE_OPEN, FALSE, &pDeviceObject);
 	IoCreateSymbolicLink(&dos, &dev);

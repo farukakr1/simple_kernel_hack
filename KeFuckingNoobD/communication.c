@@ -94,6 +94,46 @@ NTSTATUS IoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		Status = STATUS_SUCCESS;
 		BytesIO = sizeof(PKERNEL_GET_ID_REQUEST);	
 	}
+	else if (ControlCode == IO_ALLOC_REQUEST)
+	{
+		DWORD AllocatedPointer = 0;
+		PKERNEL_ALLOC_REQUEST AllocReq = (PKERNEL_ALLOC_REQUEST)Irp->AssociatedIrp.SystemBuffer;
+
+		PEPROCESS Process;
+
+		KeAllocMemory(AllocReq->ProcessId, &AllocatedPointer, AllocReq->size);
+
+		*AllocReq->pBuff = AllocatedPointer;
+
+		Status = STATUS_SUCCESS;
+		BytesIO = sizeof(PKERNEL_ALLOC_REQUEST);
+	}
+	else if (ControlCode == IO_VIRTUAL_PROTECT)
+	{
+		ULONG OldProtect = 0;
+		PKERNEL_VIRTUALPROTECT_REQUES ProtectReq = (PKERNEL_VIRTUALPROTECT_REQUES)Irp->AssociatedIrp.SystemBuffer;
+
+		PEPROCESS Process;
+
+		KeProtectVirtual(ProtectReq->ProcessId, ProtectReq->Address, ProtectReq->size, ProtectReq->Protect, &OldProtect);
+
+		*ProtectReq->pBuff = OldProtect;
+
+		Status = STATUS_SUCCESS;
+		BytesIO = sizeof(PKERNEL_VIRTUALPROTECT_REQUES);
+	}
+	else if (ControlCode == IO_FREE_MEMORY)
+	{
+		ULONG OldProtect = 0;
+		PKERNEL_FREEMEMORY_REQUEST ProtectReq = (PKERNEL_FREEMEMORY_REQUEST)Irp->AssociatedIrp.SystemBuffer;
+
+		PEPROCESS Process;
+
+		KeFreeMemory(ProtectReq->ProcessId, ProtectReq->Address, ProtectReq->size);
+
+		Status = STATUS_SUCCESS;
+		BytesIO = sizeof(PKERNEL_FREEMEMORY_REQUEST);
+	}
 	else
 	{
 		// if the code is unknown

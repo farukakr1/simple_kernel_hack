@@ -159,3 +159,82 @@ MODULEENTRY GetProcessModule(PEPROCESS Process, LPCWSTR ModuleName)
 
 	return ret;
 }
+
+NTSTATUS KeAllocMemory(ULONG ProcessId, PULONG address, ULONG size) {
+	PEPROCESS Process;
+	if (NT_SUCCESS(PsLookupProcessByProcessId(ProcessId, &Process))) {
+		NTSTATUS status;
+		ULONG _SwitchPtr = 0x232;
+
+		KAPC_STATE state;
+		KeStackAttachProcess(Process, &state);
+
+		PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + _SwitchPtr;
+		UCHAR prevMode = *pPrevMode;
+
+		*pPrevMode = KernelMode;
+
+		PVOID dd = 0;
+		status = ZwAllocateVirtualMemory(ZwCurrentProcess(), &dd, 0, &size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+		*address = (ULONG)dd;
+		*pPrevMode = prevMode;
+
+		KeUnstackDetachProcess(&state);
+	}
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS KeProtectVirtual(ULONG ProcessId, ULONG address, ULONG size, ULONG protect, PULONG oldprotect) {
+	PEPROCESS Process;
+	if (NT_SUCCESS(PsLookupProcessByProcessId(ProcessId, &Process))) {
+
+		ULONG _SwitchPtr = 0x232;
+
+		KAPC_STATE state;
+		KeStackAttachProcess(Process, &state);
+
+		PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + _SwitchPtr;
+		UCHAR prevMode = *pPrevMode;
+		*pPrevMode = KernelMode;
+
+		PVOID addr = (PVOID)address;
+		SIZE_T sz = (SIZE_T)size;
+		NTSTATUS status;
+		
+		status = ZwProtectVirtualMemory(ZwCurrentProcess(), &addr, &sz, protect, oldprotect);
+
+		*pPrevMode = prevMode;
+
+		KeUnstackDetachProcess(&state);
+	}
+
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS KeFreeMemory(ULONG ProcessId, ULONG address, ULONG size) {
+	PEPROCESS Process;
+	if (NT_SUCCESS(PsLookupProcessByProcessId(ProcessId, &Process))) {
+
+		ULONG _SwitchPtr = 0x232;
+
+		KAPC_STATE state;
+		KeStackAttachProcess(Process, &state);
+
+		PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + _SwitchPtr;
+		UCHAR prevMode = *pPrevMode;
+		*pPrevMode = KernelMode;
+
+		PVOID addr = (PVOID)address;
+		SIZE_T sz = (SIZE_T)size;
+		NTSTATUS status;
+
+		status = ZwFreeVirtualMemory(ZwCurrentProcess(), &addr, &sz, MEM_RELEASE);
+
+		*pPrevMode = prevMode;
+
+		KeUnstackDetachProcess(&state);
+	}
+
+	return STATUS_SUCCESS;
+}

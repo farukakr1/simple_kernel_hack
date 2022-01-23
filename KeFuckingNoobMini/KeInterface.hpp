@@ -2,9 +2,18 @@
 
 #include <Windows.h>
 
+#define PAGE_SIZE 0x1000
+
+
 #define IO_READ_REQUEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0701, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
 
 #define IO_WRITE_REQUEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0702, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+
+#define IO_ALLOC_REQUEST CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0705, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+
+#define IO_VIRTUAL_PROTECT CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0706, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+
+#define IO_FREE_MEMORY CTL_CODE(FILE_DEVICE_UNKNOWN, 0x0707, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
 
 typedef struct _KERNEL_READ_REQUEST
 {
@@ -32,6 +41,28 @@ typedef struct _KERNEL_GET_ID_REQUEST
 	ULONG* pBuff;
 } KERNEL_GET_ID_REQUEST, * PKERNEL_GET_ID_REQUEST;
 
+typedef struct _KERNEL_ALLOC_REQUEST
+{
+	ULONG ProcessId;
+	ULONG size;
+	ULONG* pBuff;
+} KERNEL_ALLOC_REQUEST, * PKERNEL_ALLOC_REQUEST;
+
+typedef struct _KERNEL_VIRTUALPROTECT_REQUEST
+{
+	ULONG ProcessId;
+	ULONG Address;
+	ULONG size;
+	ULONG Protect;
+	ULONG* pBuff;
+}KERNEL_VIRTUALPROTECT_REQUEST, * PKERNEL_VIRTUALPROTECT_REQUES;
+
+typedef struct _KERNEL_FREEMEMORY_REQUEST
+{
+	ULONG ProcessId;
+	ULONG Address;
+	ULONG size;
+}KERNEL_FREEMEMORY_REQUEST, * PKERNEL_FREEMEMORY_REQUEST;
 
 class KeInterface
 {
@@ -88,5 +119,55 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+	DWORD AllocMem(ULONG ProcessId, ULONG size) {
+		if (hDriver == INVALID_HANDLE_VALUE)
+			return false;
+
+		DWORD Address;
+
+		KERNEL_ALLOC_REQUEST AllocReq;
+		AllocReq.ProcessId = ProcessId;
+		AllocReq.size = size;
+		AllocReq.pBuff = &Address;
+
+		if (DeviceIoControl(hDriver, IO_ALLOC_REQUEST, &AllocReq, sizeof(AllocReq), &AllocReq, sizeof(AllocReq), 0, 0))
+		{
+			return Address;
+		}
+		return Address;
+	}
+
+	bool VirtualProtect(ULONG ProcessId, ULONG Address, ULONG size, ULONG Protect, PULONG OldProtect) {
+		if (hDriver == INVALID_HANDLE_VALUE)
+			return false;
+
+
+		KERNEL_VIRTUALPROTECT_REQUEST ProtectReq;
+		ProtectReq.ProcessId = ProcessId;
+		ProtectReq.Address = Address;
+		ProtectReq.size = size;
+		ProtectReq.Protect = Protect;
+		ProtectReq.pBuff = OldProtect;
+
+		if (DeviceIoControl(hDriver, IO_VIRTUAL_PROTECT, &ProtectReq, sizeof(ProtectReq), &ProtectReq, sizeof(ProtectReq), 0, 0))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void FreeMemory(ULONG ProcessId, ULONG Address, ULONG size) {
+		if (hDriver == INVALID_HANDLE_VALUE)
+			return;
+
+
+		KERNEL_FREEMEMORY_REQUEST FreeMemReq;
+		FreeMemReq.ProcessId = ProcessId;
+		FreeMemReq.Address = Address;
+		FreeMemReq.size = size;
+
+		DeviceIoControl(hDriver, IO_VIRTUAL_PROTECT, &FreeMemReq, sizeof(FreeMemReq), &FreeMemReq, sizeof(FreeMemReq), 0, 0);
 	}
 };
