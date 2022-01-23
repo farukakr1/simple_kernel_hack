@@ -54,8 +54,11 @@ DWORD ModuleBase = 0x00E90000;
 /*handmade :(*/
 #define Offset_isDead				0x418 //0x62C
 
+/*e8 ? ? ? ? eb ? 80 7d ? ? 8b cb*/
 #define PressActorCall				0x1D0AF0 
 
+/*e8 ? ? ? ? eb ? 8d 45 ? 50 e8 ? ? ? ? 84 c0*/
+#define ClickActorCall				0x1D0AF0 
 
 
 /*e8 ? ? ? ? 84 c0 74 ? e8 ? ? ? ? 89 86*/
