@@ -168,6 +168,6 @@ public:
 		FreeMemReq.Address = Address;
 		FreeMemReq.size = size;
 
-		DeviceIoControl(hDriver, IO_VIRTUAL_PROTECT, &FreeMemReq, sizeof(FreeMemReq), &FreeMemReq, sizeof(FreeMemReq), 0, 0);
+		DeviceIoControl(hDriver, IO_FREE_MEMORY, &FreeMemReq, sizeof(FreeMemReq), &FreeMemReq, sizeof(FreeMemReq), 0, 0);
 	}
 };

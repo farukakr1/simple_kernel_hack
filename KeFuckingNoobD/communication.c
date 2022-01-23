@@ -113,8 +113,6 @@ NTSTATUS IoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 		ULONG OldProtect = 0;
 		PKERNEL_VIRTUALPROTECT_REQUES ProtectReq = (PKERNEL_VIRTUALPROTECT_REQUES)Irp->AssociatedIrp.SystemBuffer;
 
-		PEPROCESS Process;
-
 		KeProtectVirtual(ProtectReq->ProcessId, ProtectReq->Address, ProtectReq->size, ProtectReq->Protect, &OldProtect);
 
 		*ProtectReq->pBuff = OldProtect;
@@ -126,8 +124,6 @@ NTSTATUS IoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 	{
 		ULONG OldProtect = 0;
 		PKERNEL_FREEMEMORY_REQUEST ProtectReq = (PKERNEL_FREEMEMORY_REQUEST)Irp->AssociatedIrp.SystemBuffer;
-
-		PEPROCESS Process;
 
 		KeFreeMemory(ProtectReq->ProcessId, ProtectReq->Address, ProtectReq->size);
 

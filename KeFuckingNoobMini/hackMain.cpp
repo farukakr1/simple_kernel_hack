@@ -227,6 +227,8 @@ void PressActor(DWORD vid) {
 
 		Driver.WriteVirtualMemory<std::array<unsigned char, sizeof(BufferOld)>>(pID, MainThreadAddr, BufferOldArray, sizeof(BufferOld));
 		Driver.VirtualProtect(pID, MainThreadAddr, sizeof(BufferNewArray), OldProtect, &dummy);
+		Sleep(50);
+		Driver.FreeMemory(pID, AllocatedMem, PAGE_SIZE);
 	}
 }
 
