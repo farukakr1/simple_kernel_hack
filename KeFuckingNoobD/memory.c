@@ -234,7 +234,6 @@ NTSTATUS KeFreeMemory(ULONG ProcessId, ULONG address, ULONG size) {
 		*pPrevMode = prevMode;
 
 		KeUnstackDetachProcess(&state);
-		DbgPrintEx(0, 0, "status: %x\n", status);
 	}
 
 	return STATUS_SUCCESS;
